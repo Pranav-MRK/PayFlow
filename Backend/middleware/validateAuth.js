@@ -1,10 +1,17 @@
 const AppError = require("../errors/appErr");
+const Joi = require("joi");
 
 const ValidateAuth =(req,res,next)=>{
-    const {email,password} = req.body;
-    if (!email||!password) {
-        throw new AppError("Incomplete credatials!",400);
+    const schema = Joi.object({
+        email: Joi.string().email({ tlds: { allow: false } }).required().lowercase().trim(),
+        password: Joi.string().required(),
+    });
+
+    const { error, value } = schema.validate(req.body);
+    if (error) {
+        return next(new AppError(error.details[0].message, 400));
     }
+    req.body = value;
     next();
 }
 module.exports = ValidateAuth;

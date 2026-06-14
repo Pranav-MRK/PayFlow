@@ -1,6 +1,4 @@
-const { required, func } = require('joi');
 const mongoose = require('mongoose');
-const { validate } = require('./User');
 
 
 const transactionLineSchema = new mongoose.Schema(
@@ -53,21 +51,18 @@ const transactionSchema = new mongoose.Schema(
             of: String
         },
     },
-    { timestamps: true },
+    { timestamps: true }
+);
 
-    // Pre-save database hook: Ensure total debits and credits match zero perfectly before completing
-    transactionSchema.pre("save", function (next) {
-        if (this.status === "SUCCESS") {
-            const totalSum = this.lines.reduce((sum, line) => sum + line.amount, 0);
-            if (totalSum !== 0) {
-                return next(new Error(`Ledger imbalance! Transaction entries sum to ${totalSum}, must balance to 0.`));
-            }
+// Pre-save database hook: Ensure total debits and credits match zero perfectly before completing
+transactionSchema.pre("save", function () {
+    if (this.status === "SUCCESS") {
+        const totalSum = this.lines.reduce((sum, line) => sum + line.amount, 0);
+        if (totalSum !== 0) {
+            throw new Error(`Ledger imbalance! Transaction entries sum to ${totalSum}, must balance to 0.`);
         }
-        next();
-    }),
-
-)
+    }
+});
 
 
 module.exports = mongoose.model("Transaction",transactionSchema);
-

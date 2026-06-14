@@ -2,11 +2,20 @@ const AppError = require("../errors/appErr");
 const bcrypt = require("bcrypt");
 const generateToken = require("../utils/jwt");
 const userRepository = require("../repositories/userRepository");
+const accountRepository = require("../repositories/accountRepository");
 
 class UserService {
     // 1. Create User
     async createUser(userData) {
-        const user = await userRepository.createUser(userData);
+        const hashedPassword = await bcrypt.hash(userData.password, 10);
+        const user = await userRepository.createUser({
+            ...userData,
+            password: hashedPassword
+        });
+
+        if (user.role === "MERCHANT") {
+            await accountRepository.findOrCreatePrimaryWallet(user._id, "INR", 0);
+        }
         
         // Convert to object and remove password
         const userObj = user.toObject();
@@ -47,10 +56,16 @@ class UserService {
 
         const hashedPassword = await bcrypt.hash(password, 10);
         
-        return await userRepository.createUser({
+        const user = await userRepository.createUser({
             ...userData,
             password: hashedPassword
         });
+
+        if (user.role === "MERCHANT") {
+            await accountRepository.findOrCreatePrimaryWallet(user._id, "INR", 0);
+        }
+
+        return user;
     }
 
     // 5. Login User (Verify + Token)
@@ -63,6 +78,10 @@ class UserService {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             throw new AppError("Invalid credentials", 401);
+        }
+
+        if (user.role === "MERCHANT") {
+            await accountRepository.findOrCreatePrimaryWallet(user._id, "INR", 0);
         }
 
         const token = generateToken({

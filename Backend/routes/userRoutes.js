@@ -7,8 +7,8 @@ const auth = require("../middleware/auth");
 
 router.use(auth);
 
-router.get("/user", restrictTo("ADMIN", "AUDITOR"), userController.getUsers);
-router.post("/user", restrictTo("ADMIN"), validateUser, userController.createUser);
-router.get("/user/:id", restrictTo("ADMIN", "AUDITOR", "MERCHANT"), userController.getUserById);
+router.get("/", restrictTo("ADMIN", "AUDITOR"), userController.getUsers);
+router.post("/", restrictTo("ADMIN"), validateUser, userController.createUser);
+router.get("/:id", restrictTo("ADMIN", "AUDITOR", "MERCHANT"), userController.getUserById);
 
 module.exports = router;

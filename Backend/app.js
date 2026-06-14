@@ -9,6 +9,7 @@ const app = express();
 //  routes
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
+const transactionRoutes = require('./routes/transaction');
 const { connect } = require('mongoose');
 
 
@@ -19,7 +20,8 @@ app.use(reqinfo);
 
 // 2. Routes
 app.use('/api/auth', authRoutes);
-app.use('/api', userRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/transaction', transactionRoutes);
 
 
 connectDB();

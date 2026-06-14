@@ -1,17 +1,46 @@
-// LedgerService that wraps the payment execution loop inside a true MongoDB ACID transaction.
-
 const mongoose = require("mongoose");
 const transactionRepository = require("../repositories/transactionRepository");
 const accountRepository = require("../repositories/accountRepository");
 const AppError = require("../errors/appErr");
-const Account = require("../models/Account");
 
 
 class LedgerService{
-    // Executes a bulletproof atomic peer-to-peer transfer between two digital pockets
+    async supportsMongoTransactions() {
+        const hello = await mongoose.connection.db.admin().command({ hello: 1 });
+        return Boolean(hello.setName || hello.msg === "isdbgrid");
+    }
 
+    async executeTransfer({ senderUserId, receiverUserId, amount, currency, idempotencyKey, reference }, session = null) {
+        const sourceAccount = await accountRepository.findOrCreatePrimaryWallet(senderUserId, currency, 0, session);
+        const targetAccount = await accountRepository.findOrCreatePrimaryWallet(receiverUserId, currency, 0, session);
 
-    async transferFunds({senderUserId,reciverUserId,amount,currency,idempotencyKey}){
+        if(!sourceAccount) throw new AppError("Sender account not found.",404);
+        if(!targetAccount) throw new AppError("Receiver account not found.",404);
+
+        if(sourceAccount.balance < amount){
+            throw new AppError("Insufficient funds to complete this transaction!",400);
+        }
+
+        const ledgerLines = [
+            { accountId: sourceAccount._id, amount: -amount, description: `Transfer out to reference ${reference}` },
+            { accountId: targetAccount._id, amount: amount, description: `Transfer in from reference ${reference}` }
+        ];
+
+        const pendingTx = await transactionRepository.createTransaction({
+            idempotencyKey,
+            reference,
+            status: "PROCESSING",
+            lines: ledgerLines,
+        }, session);
+
+        await accountRepository.updateBalance(sourceAccount._id, -amount, session);
+        await accountRepository.updateBalance(targetAccount._id, amount, session);
+
+        const finalizedTx = await transactionRepository.updateStatus(pendingTx._id, "SUCCESS", null, session);
+        return { message: "Transfer successful", transaction: finalizedTx };
+    }
+
+    async transferFunds({senderUserId,receiverUserId,amount,currency,idempotencyKey}){
         if(amount <=0){
             throw new AppError("Transfer Amount must be greater than the zero",400);
         }
@@ -22,7 +51,7 @@ class LedgerService{
         if (existingTR) {
             return {
                 message:"Duplicate request is found.Returning previously processed transaction.",
-                transatiction:existingTR,
+                transaction:existingTR,
                 duplicate:true,
             }
 
@@ -33,54 +62,29 @@ class LedgerService{
         // Generate a clean payment tracking reference string
         const reference = `tx_Buffer${Buffer.from(idempotencyKey).toString("hex").slice(0,12)}`;
 
-        // 2. Initialize our master ACID Transaction Safety Bubble
+        const transferData = { senderUserId, receiverUserId, amount, currency, idempotencyKey, reference };
+        const canUseTransactions = await this.supportsMongoTransactions();
+        if (!canUseTransactions) {
+            const result = await this.executeTransfer(transferData);
+            return {
+                ...result,
+                transactionMode: "standalone",
+                warning: "MongoDB is not running as a replica set, so this transfer was processed without a database transaction."
+            };
+        }
 
         const session = await mongoose.startSession();
-
         session.startTransaction();
 
-
         try {
-            // 3. Locate both financial pockets inside the session bubble
-            const sourceAccount = await accountRepository.findByNameAndCurrency(senderUserId,'Primary Wallet',currency,session);
-            const targetAccount = await accountRepository.findByNameAndCurrency(reciverUserId,'Primary Wallet',currency,session);
-
-
-            if(!sourceAccount) throw new AppError("Sender account not found.",404);
-            if(!targetAccount) throw new AppError("Reciver account not found.",404);
-
-
-            // check if sender have enough cash 
-            if(sourceAccount.balance < currency){
-                throw new AppError("Insufficient funds to complete this transaction!",400);
-            }
-
-            // Initialize an audit trail log in state: INITIATED
-
-            const ledgerLines = [
-                { accountId: sourceAccount._id, amount: -amount, description: `Transfer out to reference ${reference}` }, // Credit
-                { accountId: targetAccount._id, amount: amount, description: `Transfer in from reference ${reference}` }   // Debit
-            ];
-
-            const pendingTx = await transactionRepository.createTransaction({
-                idempotencyKey,
-                reference,
-                status: "PROCESSING",
-                lines: ledgerLines,
-            },session);
-
-
-            // 6. Execute atomic balance updates inside the session bubble
-            await accountRepository.updateBalance(sourceAccount._id, -amount, session);
-            await accountRepository.updateBalance(targetAccount._id, amount, session);
-
-            // Update transaction log status to SUCCESS (Triggers the zero-sum verification hook!)
-            const finalizedTx = await transactionRepository.updateStatus(pendingTx._id, "SUCCESS", null, session);
-            // 8. Everything passed seamlessly! Commit changes permanently to the database disk
+            const result = await this.executeTransfer(transferData, session);
             await session.commitTransaction();
-            return { message: "Transfer successful", transaction: finalizedTx };
+            return {
+                ...result,
+                transactionMode: "transaction"
+            };
         } catch (error) {
-            await session.abortTransaction(); // anything went wrong return it back all things be at normal mode 
+            await session.abortTransaction();
             // Log the failure to the database ledger audit history for transparency
             try {
                 await transactionRepository.createTransaction({

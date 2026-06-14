@@ -22,6 +22,29 @@ class AccountRepository {
         return await Account.findOne({ userId, name, currency }).session(session);
     }
 
+    async findOrCreatePrimaryWallet(userId, currency = "INR", openingBalance = 0, session = null) {
+        const existingAccount = await this.findByNameAndCurrency(userId, "Primary Wallet", currency, session);
+        if (existingAccount) {
+            return existingAccount;
+        }
+
+        try {
+            return await this.createAccount({
+                userId,
+                name: "Primary Wallet",
+                type: "LIABILITY",
+                currency,
+                balance: openingBalance,
+                Status: "ACTIVE",
+            }, session);
+        } catch (error) {
+            if (error.code === 11000) {
+                return await this.findByNameAndCurrency(userId, "Primary Wallet", currency, session);
+            }
+            throw error;
+        }
+    }
+
     // Atomic update to change a wallet balance safely
     async updateBalance(accountId, amount, session = null) {
         return await Account.findByIdAndUpdate(
