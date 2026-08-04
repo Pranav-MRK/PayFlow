@@ -6,6 +6,24 @@ class TransactionRepository {
         const transaction = new Transaction(transactionData);
         return await transaction.save({ session });
     }
+    async findByAccountIds(accountIds, { page, limit }) {
+        const filter = {
+            status: "SUCCESS",
+            "lines.accountId": { $in: accountIds },
+        };
+
+        const [transactions, total] = await Promise.all([
+            Transaction.find(filter)
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .populate("lines.accountId", "name currency userId"),
+
+            Transaction.countDocuments(filter),
+        ]);
+
+        return { transactions, total };
+    }
 
     // Find a transaction by its unique system reference tracking token (e.g., tx_12345)
     async findByReference(reference) {

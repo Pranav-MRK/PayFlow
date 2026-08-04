@@ -64,6 +64,9 @@ class UserService {
         if (user.role === "MERCHANT") {
             await accountRepository.findOrCreatePrimaryWallet(user._id, "INR", 0);
         }
+        if(user.role == "ADMIN"){
+            throw new AppError("Admin role cannot be given...!",400);
+        }
 
         return user;
     }
@@ -92,6 +95,7 @@ class UserService {
 
         // Remove password from response
         user.password = undefined;
+        console.log(user);
 
         return { token, user };
     }

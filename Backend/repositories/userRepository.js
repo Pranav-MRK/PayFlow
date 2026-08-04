@@ -12,7 +12,7 @@ class UserRepository{
   }
 
   async findUserByEmail(email){
-    return await User.findOne({email}).select("+password role");
+    return await User.findOne({email}).select("+password");
   }
   async findUsers({ page, limit, sort, order }) {
 

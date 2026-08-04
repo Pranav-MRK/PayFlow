@@ -1,3 +1,4 @@
+const AppError = require("../errors/appErr");
 const userService = require("../services/userService");
 const asyncWrapper = require("../utils/asyncWrapper");
 
@@ -23,10 +24,23 @@ class UserController {
             data: users
         });
     });
+    getMyProfile = asyncWrapper(async (req, res) => {
+        const user = await userService.getUserById(req.user.id);
+
+        res.status(200).json({
+            success: true,
+            data: user,
+        });
+    });
+    
 
 
     getUserById = asyncWrapper(async (req, res, next) => {
         const { id } = req.params;
+        
+        if (req.user.role === "MERCHANT" && req.user.id !== req.params.id) {
+            return next(new AppError("You can only access your own profile", 403));
+        }
         const user = await userService.getUserById(id);
 
         res.status(200).json({

@@ -9,6 +9,7 @@ router.use(auth);
 
 router.get("/", restrictTo("ADMIN", "AUDITOR"), userController.getUsers);
 router.post("/", restrictTo("ADMIN"), validateUser, userController.createUser);
+router.get("/me", userController.getMyProfile);
 router.get("/:id", restrictTo("ADMIN", "AUDITOR", "MERCHANT"), userController.getUserById);
 
 module.exports = router;

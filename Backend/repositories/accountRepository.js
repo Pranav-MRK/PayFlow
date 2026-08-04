@@ -53,6 +53,20 @@ class AccountRepository {
             { new: true, runValidators: true, session }
         );
     }
+
+    async credit(accountId, amount, session = null) {
+        return await this.updateBalance(accountId, amount, session);
+    }
+
+    async debitIfSufficient(accountId, amount, session = null) {
+        return await Account.findOneAndUpdate(
+            { _id: accountId, balance: { $gte: amount } },
+            { $inc: { balance: -amount } },
+            { new: true, runValidators: true, session }
+        );
+    }
+
+   
 }
 
 module.exports = new AccountRepository();

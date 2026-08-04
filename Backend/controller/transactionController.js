@@ -2,6 +2,21 @@ const asyncWrapper = require("../utils/asyncWrapper");
 const LedgerService = require("../services/ledgerService");
 const AppError = require("../errors/appErr");
 class TransactionController{
+    getMyTransactions = asyncWrapper(async (req, res) => {
+        const page = Math.max(Number(req.query.page) || 1, 1);
+        const limit = Math.min(Math.max(Number(req.query.limit) || 5, 1), 50);
+
+        const result = await LedgerService.getMyTransactions(req.user.id, {
+            page,
+            limit,
+        });
+
+        res.status(200).json({
+            success: true,
+            data: result.transactions,
+            pagination: result.pagination,
+        });
+    });
     transfer = asyncWrapper(async(req,res,next)=>{
         console.log("=== DEBUGGING TRANSFER ENDPOINT ===");
         console.log("Raw req.body contents:", req.body);

@@ -4,24 +4,35 @@ const connectDB = require("./config/db");
 const logger = require("./middleware/logger");
 const reqinfo = require("./middleware/reqinfo");
 const errorHandler = require("./middleware/errorHandler");
+const cors = require("cors");
 const app = express();
 
 //  routes
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const transactionRoutes = require('./routes/transaction');
+const adminRoutes = require("./routes/adminRoutes");
+const accountRoutes = require("./routes/accountRoutes");
 const { connect } = require('mongoose');
 
 
 //  middleware 
 app.use(express.json());
+app.use(
+    cors({
+        origin: 'http://localhost:5173', 
+        credentials: true
+    })
+);
 app.use(logger);
 app.use(reqinfo);
 
 // 2. Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use("/api/accounts", accountRoutes);
 app.use('/api/transaction', transactionRoutes);
+app.use('/api/admin',adminRoutes);
 
 
 connectDB();

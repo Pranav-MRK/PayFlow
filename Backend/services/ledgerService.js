@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const transactionRepository = require("../repositories/transactionRepository");
 const accountRepository = require("../repositories/accountRepository");
 const AppError = require("../errors/appErr");
+const UserRepository = require("../repositories/userRepository");
+const userRepository = require("../repositories/userRepository");
 
 
 class LedgerService{
@@ -9,6 +11,35 @@ class LedgerService{
         const hello = await mongoose.connection.db.admin().command({ hello: 1 });
         return Boolean(hello.setName || hello.msg === "isdbgrid");
     }
+    async getMyTransactions (userId,{page, limit}){
+        const accounts = await accountRepository.findByUserId(userId);
+        const accountIds = accounts.map((account) => account._id);
+
+        if (accountIds.length === 0) {
+            return{
+                transactions:[],
+                pagination:{
+                    page,
+                    limit,
+                    total: 0,
+                    totalPages: 0,
+                },
+            };
+        }
+        const {transactions,total} = await transactionRepository.findByAccountIds(accountIds,{page,limit});
+        return {
+            transactions,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+
+    }
+    
+    
 
     async executeTransfer({ senderUserId, receiverUserId, amount, currency, idempotencyKey, reference }, session = null) {
         const sourceAccount = await accountRepository.findOrCreatePrimaryWallet(senderUserId, currency, 0, session);
@@ -44,6 +75,12 @@ class LedgerService{
         if(amount <=0){
             throw new AppError("Transfer Amount must be greater than the zero",400);
         }
+
+        const reciver = await userRepository.findUserById(receiverUserId);
+        if (!reciver) {
+            throw new AppError("Reciver not found...",404);
+        }
+        
 
         //  check duplicate request 
 
@@ -103,6 +140,9 @@ class LedgerService{
         }
 
     }
+
+    
+  
 }
 
 module.exports = new LedgerService();
