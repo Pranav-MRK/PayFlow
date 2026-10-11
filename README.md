@@ -1,63 +1,182 @@
-# PayFlow — Production-Grade Payment Ledger & Transaction Engine
+<div align="center">
 
-PayFlow is a high-performance, resilient fintech backend engineering platform designed to handle multi-party transactions with zero data loss. Built entirely using the **MERN Stack**, the platform implements rigorous corporate standards for data consistency, idempotency, role-based security, and audit observability.
+# 💸 PayFlow
 
-## 🏗️ Project Architecture & Layout
-The project enforces a highly decoupled, strict separation of concerns using the **Repository-Service-Controller** architectural pattern to ensure modularity and comprehensive unit testability.
+### Production-grade payment ledger & transaction engine
 
+Double-entry bookkeeping · ACID transactions · Idempotent transfers · Role-based security
 
-PayFlow/ (Project Root)
-├── Frontend/               # React.js client architecture (Upcoming)
-├── Backend/                # Node.js / Express Core Transaction Engine
-│   ├── config/             # Database connection profiles
-│   ├── controller/         # HTTP request orchestration and response termination
-│   ├── errors/             # Custom structural operational system exceptions
-│   ├── middleware/         # Security guards, request interceptors, and validators
-│   ├── model/              # MongoDB/Mongoose database entity definitions
-│   ├── repositories/       # Abstraction layer over raw database queries
-│   ├── routes/             # REST resource endpoint declarations
-│   ├── services/           # Decoupled business rules and hashing modules
-│   ├── utils/              # Utility helpers (JWT tokens, wrappers)
-│   ├── app.js              # Application bootstrapper & global pipeline manager
-│   └── .env                # Protected environmental variables (Git ignored)
-└── .gitignore              # Multi-module protection rules
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
 
+</div>
 
+---
 
+## 📖 About
 
+**PayFlow** is a full-stack (MERN) fintech platform that lets merchants hold INR wallets and transfer funds to each other safely. Instead of simply incrementing and decrementing a balance field, PayFlow records every movement as an **immutable double-entry ledger transaction**, the same principle used by real banks and payment processors.
 
-## 🚀 (Day 1)
-- **Modular Framework Setup**: Configured a centralized Express pipeline tracking incoming telemetry via global `logger` and `reqinfo` interceptors.
-- **Robust Exception Boundaries**: Formulated an architectural `AppError` base structure managed globally by an exclusive error interceptor to handle unhandled breaks and validation failures gracefully.
-- **Repository-Service Abstraction**: Completely isolated data persistence queries away from the execution layer using clean repository layers.
-- **Secure Authentication & Hashing**: Implemented cryptographically sound user registration and login pathways, utilizing explicit `bcrypt` multi-round salt hashing completely within isolated service containers.
-- **Role-Based Access Control (RBAC)**: Formulated strict gateway decorators (`auth`, `restrictTo`) protecting endpoints based on administrative clearings (`MERCHANT`, `ADMIN`, `AUDITOR`).
-- **Joi Request Schemas**: Installed pre-controller interceptors validating structure payloads natively to catch bad data signatures before hitting system databases.
+The backend follows a strict **Repository → Service → Controller** architecture, keeping business rules, persistence, and HTTP concerns fully separated and easy to test.
 
+## 📸 Screenshots
 
-## 🏦 The Financial Engine Core Principle: Double-Entry Bookkeeping
-Unlike basic applications that simply increment or decrement a single balance field, PayFlow treats balance adjustment as an immutable balance transfer. 
-* Every financial transaction requires at least two lines: a **Debit** (positive entry) and a **Credit** (negative entry).
-* The core invariant rule enforced at the database layer via pre-save hooks is: $\sum \text{Debits} + \sum \text{Credits} = 0$.
-* Money can never be created or destroyed within the ecosystem; it can only safely migrate between verified financial pools (`ASSET`, `LIABILITY`, etc.).
+<table>
+  <tr>
+    <td align="center"><b>Login</b><br><img src="docs/screenshots/login.png" alt="Login page"></td>
+    <td align="center"><b>Overview</b><br><img src="docs/screenshots/overview.png" alt="Dashboard overview"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Wallet</b><br><img src="docs/screenshots/wallet.png" alt="Wallet page"></td>
+    <td align="center"><b>Transfer Funds</b><br><img src="docs/screenshots/transfer.png" alt="Transfer funds form"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Transactions</b><br><img src="docs/screenshots/transactions.png" alt="Transaction history"></td>
+    <td align="center"><b>Profile</b><br><img src="docs/screenshots/profile.png" alt="Profile page"></td>
+  </tr>
+</table>
 
-## 🚀 (Day2)
-- **Double-Entry Schema Layout (Day 2)**: Initialized explicit `Account` and `Transaction` data architectures protecting system balance ledger lines from un-audited alterations.
-- **Repository Abstraction Layer (Day 2)**: Formulated clean, standalone `accountRepository` and `transactionRepository` layers capable of handling advanced atomic `$inc` actions and pipeline session bubbles.
-- **Modular Framework Setup (Day 1)**: Configured a centralized Express pipeline tracking incoming telemetry via global logger and request info interceptors.
-- **Robust Exception Boundaries (Day 1)**: Formulated an architectural `AppError` base structure managed globally by an exclusive error interceptor to handle validation failures gracefully.
-- **Secure Authentication & Hashing (Day 1)**: Implemented credential verification paths using cryptographically sound `bcrypt` hashing algorithms.
-- **Role-Based Access Control (Day 1)**: Formulated strict gateway decorators (`auth`, `restrictTo`) protecting sensitive user resources based on roles (`MERCHANT`, `ADMIN`, `AUDITOR`).
+## ✨ Features
 
+| | Feature | Description |
+|---|---|---|
+| 🔐 | **Secure authentication** | Registration and login with `bcrypt` salted hashing and JWT sessions |
+| 🛡️ | **Role-based access control** | `auth` and `restrictTo` guards for `MERCHANT`, `ADMIN` and `AUDITOR` roles |
+| 📒 | **Double-entry ledger** | Every transaction has balanced debit and credit lines that always sum to zero |
+| ⚛️ | **ACID transfers** | MongoDB sessions keep multi-document writes atomic |
+| 🔁 | **Idempotency** | Unique request keys stop duplicate transfers from being processed twice |
+| ✅ | **Request validation** | Joi schemas reject malformed payloads before they reach the database |
+| 🚨 | **Centralised error handling** | A custom `AppError` hierarchy and a global error interceptor |
+| 📝 | **Request logging** | Global `logger` and `reqinfo` middleware for observability |
+| 🖥️ | **Merchant dashboard** | React UI for balance, wallet, transfers and paginated transaction history |
 
+## 🏦 Core Principle: Double-Entry Bookkeeping
 
+PayFlow never "edits a balance". Every movement of money is a transaction made of at least two entries:
 
+```
+Transfer ₹10,000  (Sender → Receiver)
 
+  Sender wallet     Debit   −₹10,000
+  Receiver wallet   Credit  +₹10,000
+  ───────────────────────────────────
+  Sum of all entries          ₹0       ✔ invariant enforced
+```
 
-## 📅 Roadmap Blueprint
-- [x] Day 1: System Architecture, Clean Authentication Core, and RBAC Guarding.
-- [x] Day 2: Double-Entry Ledger Bookkeeping Models, Zero-Sum Pre-Saves, and Repository Setup.
-- [ ] Day 3: Full Ledger Revision & MongoDB ACID Transaction Services (`session.startTransaction`).
-- [ ] Day 4: Idempotence Middleware Protection via unique request fingerprinting keys.
-- [ ] Day 5: Multi-Account Real-Time Balance Verification Aggregations.
-- [ ] Day 6: Webhook Callback Simulations & Exponential Decay Backoffs.
+The invariant **Σ Debits + Σ Credits = 0** is enforced at the database layer with a pre-save hook, so money can never be created or destroyed. It can only move between accounts (`ASSET`, `LIABILITY`, etc.).
+
+## 🏗️ Architecture
+
+```
+PayFlow/
+├── Frontend/                 # React client (dashboard UI)
+└── Backend/                  # Node.js / Express transaction engine
+    ├── config/               # Database connection
+    ├── controller/           # HTTP orchestration & responses
+    ├── errors/               # Custom operational exceptions (AppError)
+    ├── middleware/           # Auth guards, validators, logger
+    ├── model/                # Mongoose schemas (User, Account, Transaction)
+    ├── repositories/         # Data-access abstraction over raw queries
+    ├── routes/               # REST endpoint declarations
+    ├── services/             # Business rules & hashing
+    ├── utils/                # JWT helpers, wrappers
+    └── app.js                # App bootstrap & global middleware pipeline
+```
+
+**Request flow**
+
+```
+Client → Route → Middleware (auth · RBAC · Joi) → Controller → Service → Repository → MongoDB
+```
+
+## 🧰 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React.js |
+| Backend | Node.js, Express |
+| Database | MongoDB, Mongoose |
+| Auth & security | JWT, bcrypt, RBAC |
+| Validation | Joi |
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- MongoDB running as a **replica set** (required for multi-document ACID transactions). A free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster works out of the box.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Pranav-MRK/PayFlow.git
+cd PayFlow
+```
+
+### 2. Run the backend
+
+```bash
+cd Backend
+npm install
+```
+
+Create a `.env` file in `Backend/`:
+
+```env
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_super_secret_key
+```
+
+> Adjust the variable names to match your `config/` and `utils/` files.
+
+```bash
+npm run dev
+```
+
+### 3. Run the frontend
+
+```bash
+cd Frontend
+npm install
+npm run dev
+```
+
+Open the URL printed in the terminal (usually `http://localhost:5173`).
+
+## 🔄 How a Transfer Works
+
+1. The sender enters the **receiver's user ID**, the **amount** and the currency (INR).
+2. The request passes through authentication and Joi validation.
+3. The service opens a MongoDB session and starts a transaction.
+4. A balanced debit and credit pair is written to the ledger, and both wallet balances are updated atomically.
+5. On success the transaction is committed and recorded as `SUCCESS`. On any failure the whole operation is rolled back.
+
+## 🗺️ Roadmap
+
+- [x] **Day 1:** Architecture, authentication core and RBAC
+- [x] **Day 2:** Double-entry models, zero-sum pre-save hooks and repositories
+- [x] **Frontend:** Login, overview, wallet, profile, transfer and transactions pages
+- [ ] **Day 3:** Full ledger revision and MongoDB ACID transaction services
+- [ ] **Day 4:** Idempotency middleware using unique request fingerprint keys
+- [ ] **Day 5:** Multi-account real-time balance verification aggregations
+- [ ] **Day 6:** Webhook callback simulation with exponential backoff
+
+## 🤝 Contributing
+
+Contributions, issues and feature requests are welcome. Feel free to open an [issue](https://github.com/Pranav-MRK/PayFlow/issues) or submit a pull request.
+
+## 👤 Author
+
+**Pranav** · [@Pranav-MRK](https://github.com/Pranav-MRK)
+
+---
+
+<div align="center">
+
+⭐ If you found this project useful, consider giving it a star!
+
+</div>
